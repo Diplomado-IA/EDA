@@ -1,0 +1,5 @@
+# Librerías necesarias para entorno Python
+pandas==2.3.2
+numpy==2.3.3
+matplotlib==3.10.6
+pathlib2==2.3.7.post1

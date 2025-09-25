@@ -1,0 +1,22 @@
+# Python-specific ignores
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Outputs
+outputs/
+outputs/otros_resultados/
+
+# System files
+.DS_Store
+Thumbs.db
