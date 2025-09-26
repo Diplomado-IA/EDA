@@ -29,7 +29,7 @@
 
 5. **Ejecutar el script principal**:
    ```bash
-   python src/main.py
+   python ejemplos.py
    ```
 
 ## Estructura del proyecto

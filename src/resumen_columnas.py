@@ -1,1 +1,0 @@
-# Funciones para tablas de calidad y EDA
