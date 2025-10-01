@@ -10,7 +10,7 @@ print("Ejemplo 1 — Carga robusta de CSV\n")
 import pandas as pd
 from pathlib import Path
 
-def cargar_csv(ruta:str, sep:str=";", encoding_prioridad=("utf-8", "latin-1")) -> pd.DataFrame:
+def cargar_csv(ruta:str, sep:str=",", encoding_prioridad=("utf-8", "latin-1")) -> pd.DataFrame:
     """
     Lee un archivo CSV probando múltiples 'encodings' y valida la existencia del archivo.
 
@@ -39,7 +39,7 @@ def cargar_csv(ruta:str, sep:str=";", encoding_prioridad=("utf-8", "latin-1")) -
     raise RuntimeError(f"No se pudo leer el CSV con encodings {encoding_prioridad}. Último error: {ultimo_error}")
 
 # === USO DIDÁCTICO ===
-df = cargar_csv("datos.csv")     # Cambia a sep=";" si tu CSV usa punto y coma
+df = cargar_csv("Generative AI Tools - Platforms 2025.csv")     # Cambia a sep=";" si tu CSV usa punto y coma
 print(df.head(3))                 # Vista rápida de las primeras 3 filas
 print(df.dtypes)                  # Tipos de cada columna
 
@@ -114,7 +114,7 @@ print("Ejemplo 4 — Distribución de variable objetivo\n")
 
 import matplotlib.pyplot as plt
 
-objetivo = "Proceso"   # <--- Cambia al nombre real de tu variable objetivo
+objetivo = "company"   # <--- Cambia al nombre real de tu variable objetivo
 
 if objetivo not in df.columns:
     raise KeyError(f"La columna objetivo '{objetivo}' no existe en el dataset.")
