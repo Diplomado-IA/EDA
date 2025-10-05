@@ -127,3 +127,42 @@ python -m src.main --csv "mi_dataset.csv" --sep "," --objetivo "columna_objetivo
 ```
 
 Esta función es ideal para obtener rápidamente una visión completa de un dataset nuevo.
+
+## Notebooks interactivos
+
+El proyecto incluye un notebook interactivo en la carpeta `notebooks/` que permite una exploración más detallada y visual de los datos:
+
+### exploracion.ipynb
+
+Este notebook contiene una implementación paso a paso del análisis exploratorio de datos utilizando los módulos del proyecto. Incluye:
+
+- Carga robusta de datos con detección automática de encoding
+- Análisis de calidad de datos y resumen de columnas
+- Estadísticas descriptivas detalladas
+- Visualizaciones de distribuciones para variables categóricas y numéricas
+- Análisis de la variable objetivo y recomendación de métricas
+- Ejecución del EDA completo en un solo paso
+
+#### Para ejecutar el notebook:
+
+1. Asegúrate de tener instaladas las dependencias:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Inicia Jupyter Notebook o Jupyter Lab:
+
+   ```bash
+   jupyter notebook
+   # O
+   jupyter lab
+   ```
+
+3. Navega hasta la carpeta `notebooks/` y abre `exploracion.ipynb`
+
+4. Ejecuta las celdas en orden para ver el análisis completo, con comentarios detallados que explican cada paso del proceso y los resultados obtenidos.
+
+### analisis_ejecutado.ipynb
+
+Este notebook contiene un análisis completo ya ejecutado sobre el dataset "Generative AI Tools - Platforms 2025.csv", mostrando los resultados y visualizaciones generadas. Es útil como referencia para ver el funcionamiento del pipeline EDA.
