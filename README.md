@@ -36,23 +36,23 @@ Este proyecto implementa un pipeline de análisis exploratorio de datos (EDA) pa
 5. **Ejecutar el script principal**:
 
    ```bash
-   # Ejemplo completo:
-   python -m src.main --csv "Generative AI Tools - Platforms 2025.csv" --sep "," --objetivo company
+   # Ejemplo completo con el dataset de titulados:
+   python -m src.main --csv "data/TITULADO_2007-2024_web_19_05_2025_E.csv" --sep ";" --objetivo "REGIÓN"
 
    # Sin mostrar el gráfico (solo guardar a archivo):
-   python -m src.main --csv "Generative AI Tools - Platforms 2025.csv" --sep "," --objetivo company --no-show
+   python -m src.main --csv "data/TITULADO_2007-2024_web_19_05_2025_E.csv" --sep ";" --objetivo "REGIÓN" --no-show
 
    # Solo EDA tabular, sin objetivo:
-   python -m src.main --csv "Generative AI Tools - Platforms 2025.csv" --sep ","
+   python -m src.main --csv "data/TITULADO_2007-2024_web_19_05_2025_E.csv" --sep ";"
 
    # Especificando columnas categóricas y máximo de categorías:
-   python -m src.main --csv "Generative AI Tools - Platforms 2025.csv" --sep "," --cat-cols category_canonical modality_canonical --max-cats 5
+   python -m src.main --csv "data/TITULADO_2007-2024_web_19_05_2025_E.csv" --sep ";" --cat-cols "NOMBRE INSTITUCIÓN" "ÁREA DEL CONOCIMIENTO" --max-cats 10
 
    # Sin generar histogramas ni boxplots:
-   python -m src.main --csv "Generative AI Tools - Platforms 2025.csv" --sep "," --no-histos --no-box
+   python -m src.main --csv "data/TITULADO_2007-2024_web_19_05_2025_E.csv" --sep ";" --no-histos --no-box
 
    # EDA mínimo todo-en-uno:
-   python -m src.main --csv "Generative AI Tools - Platforms 2025.csv" --sep "," --objetivo company --no-show --run-minimo
+   python -m src.main --csv "data/TITULADO_2007-2024_web_19_05_2025_E.csv" --sep ";" --objetivo "REGIÓN" --no-show --run-minimo
    ```
 
    Parámetros CLI
@@ -71,7 +71,8 @@ Este proyecto implementa un pipeline de análisis exploratorio de datos (EDA) pa
 
 ```bash
 .
-├── Generative AI Tools - Platforms 2025.csv   # Tu dataset
+├── data/
+│   └── TITULADO_2007-2024_web_19_05_2025_E.csv  # Dataset de titulados
 ├── outputs/
 │   ├── figures/                   # gráficos generados
 │   └── resumen/                   # reportes/tablas
@@ -81,13 +82,13 @@ Este proyecto implementa un pipeline de análisis exploratorio de datos (EDA) pa
 │   ├── resumen_columnas.py        # capa de calidad/EDA tabular
 │   ├── eda.py                     # capa de EDA visual
 │   └── main.py                    # orquestación/CLI
-├── ejemplos.py                    # referencia (no se ejecuta)
+├── ejemplos.py                    # referencia didáctica
 ├── requirements.txt
 └── README.md
 
 ```
 
-- `data/`: Carpeta para almacenar datos CSV o datasets.
+- `data/`: Carpeta para almacenar datos CSV o datasets (actualmente contiene datos de titulados universitarios 2007-2024).
 - `src/`: Código fuente Python.
 - `notebooks/`: Notebooks para prototipado y exploración interactiva.
 - `outputs/`: Resultados generados como gráficos y reportes.
