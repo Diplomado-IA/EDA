@@ -31,6 +31,13 @@ fase = st.sidebar.radio("Selecciona Fase:", ["Fase 1 - Objetivos", "Fase 2 - EDA
 st.sidebar.markdown("---")
 st.sidebar.write(f"Dataset: {config.DATASET_PATH}")
 st.sidebar.write(f"Targets: {config.TARGET_CLASSIFICATION} / {config.TARGET_REGRESSION}")
+if st.sidebar.button("🧹 Limpiar artefactos (clean.sh)"):
+    import subprocess
+    try:
+        subprocess.run(["bash", "clean.sh"], check=True)
+        st.sidebar.success("Limpieza completada")
+    except Exception as e:
+        st.sidebar.error(f"Error al limpiar: {e}")
 
 # ============ FASE 1 ============
 if fase.startswith("Fase 1"):
@@ -114,13 +121,16 @@ elif fase.startswith("Fase 2"):
         st.dataframe(df.head(), use_container_width=True)
 
     st.subheader("Artefactos Generados")
+
+
+
     artefacts = [
-        "resumen_columnas.csv",
-        "resumen_columnas_ordenado.csv",
-        "top10_faltantes.csv",
-        "descriptivos_numericos.csv",
-        "decision_metricas.txt"
-    ]
+            "resumen_columnas.csv",
+            "resumen_columnas_ordenado.csv",
+            "top10_faltantes.csv",
+            "descriptivos_numericos.csv",
+            "decision_metricas.txt"
+        ]
     for a in artefacts:
         p = Path(f"outputs/eda/resumen/{a}")
         if p.exists():
@@ -132,8 +142,9 @@ elif fase.startswith("Fase 2"):
         else:
             st.write(f"⌛ {a} pendiente")
 
+
     # Gráficos generados en data/processed (Fase 1)
-    st.subheader("Gráficos (Fase 1) en data/processed")
+    st.subheader("Gráficos en data/processed")
     proc_dir = Path("data/processed")
     if proc_dir.exists():
         proc_imgs = [
@@ -153,25 +164,7 @@ elif fase.startswith("Fase 2"):
             st.info("No hay imágenes en data/processed aún")
     else:
         st.info("Directorio data/processed no existe")
-
-    st.subheader("Otros Gráficos")
-    artefacts = [
-        "resumen_columnas.csv",
-        "resumen_columnas_ordenado.csv",
-        "top10_faltantes.csv",
-        "descriptivos_numericos.csv",
-        "decision_metricas.txt"
-    ]
-    for a in artefacts:
-        p = Path(f"outputs/eda/resumen/{a}")
-        if p.exists():
-            st.write(f"✅ {a}")
-            if a.endswith('.csv'):
-                st.dataframe(pd.read_csv(p), use_container_width=True)
-            elif a.endswith('.txt'):
-                st.code(p.read_text(encoding='utf-8'), language='text')
-        else:
-            st.write(f"⌛ {a} pendiente")
+    
 
     st.subheader("Otros Gráficos")
     fig_dir = Path("outputs/eda/figures")
@@ -188,4 +181,3 @@ elif fase.startswith("Fase 2"):
     st.info("Criterios Fase 2: CSV + gráficos + decisión métricas presentes.")
 
 st.markdown("---")
-st.caption("UI Fases 1 y 2 • src/eda.py + config/config.py • 2025-11-14")
