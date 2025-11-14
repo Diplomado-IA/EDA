@@ -37,7 +37,7 @@ def check_phase_1():
         if path.exists():
             generated += 1
     
-    print(f"\n📊 Resultado: {generated}/{len(expected_files)} archivos generados")
+    print(f"\n📊 Resultado: {generated}/{len(expected_files)} archivos generados (dataset grande activo)")
     return generated == len(expected_files)
 
 def check_phase_2():
