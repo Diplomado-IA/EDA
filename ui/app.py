@@ -39,6 +39,15 @@ if st.sidebar.button("🧹 Limpiar artefactos (clean.sh)"):
     except Exception as e:
         st.sidebar.error(f"Error al limpiar: {e}")
 
+# Ejecutar Fase 1 para generar gráficos en data/processed
+if st.sidebar.button("🖼️ Generar gráficos Fase 1"):
+    import subprocess
+    try:
+        subprocess.run(["./venv/bin/python", "scripts/execute_pipeline.py", "--phase", "1"], check=True)
+        st.sidebar.success("Gráficos Fase 1 generados")
+    except Exception as e:
+        st.sidebar.error(f"Error al generar Fase 1: {e}")
+
 # ============ FASE 1 ============
 if fase.startswith("Fase 1"):
     st.header("Fase 1: Comprensión del Caso y Objetivos")
