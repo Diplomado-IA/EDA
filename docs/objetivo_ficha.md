@@ -1,4 +1,4 @@
-# Ficha de Objetivos del Proyecto ML (Actualizada 2025-11-14T02:58:45.259Z)
+# Ficha de Objetivos del Proyecto ML 
 
 ## 1. Problema Estratégico
 Transformar datos históricos de educación superior (2007–2024) en inteligencia accionable para: (a) anticipar modalidad operativa de programas (optimización de capacidad y costos) y (b) estimar edad promedio de titulación (diseño de apoyos y planificación curricular).

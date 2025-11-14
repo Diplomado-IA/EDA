@@ -1,6 +1,6 @@
-Proyecto ML reestructurado segun arquitectura modular (CLI, UI, Notebooks). Ver config/config.py y src/pipeline.py.
+Proyecto ML reestructurado segun arquitectura modular.
 
-Guía rápida para descargar y ejecutar la UI (actualizado 2025-11-14T03:48:30.354Z)
+Guía rápida para descargar y ejecutar la UI
 
 1) Descarga del proyecto
 - Requiere Git y Python 3.10+.
@@ -24,7 +24,7 @@ Guía rápida para descargar y ejecutar la UI (actualizado 2025-11-14T03:48:30.3
   streamlit run ui/app.py
 - En la UI:
   - Fase 1: valida objetivos y configuración.
-  - Fase 2: pulsa "Cargar Dataset" y luego "Ejecutar EDA" (genera artefactos y gráficos Fase 1).
+  - Fase 2: pulsa "Cargar Dataset" y luego "Ejecutar EDA" (genera artefactos y gráficos).
   - Usa el botón lateral "Limpiar artefactos (clean.sh)" para reiniciar.
 
 5) Artefactos generados
