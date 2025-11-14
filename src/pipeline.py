@@ -18,7 +18,20 @@ class MLPipeline:
         return {}
 
     def preprocess_data(self):
-        logger.info("preprocess_data: noop placeholder")
+        logger.info("preprocess_data: fase 3")
+        try:
+            from config.config import Config
+            from src.preprocessing.clean import preprocess_pipeline
+            import pandas as pd
+            # Cargar si no existe
+            if self.df is None:
+                from src.eda import cargar_csv
+                self.df = cargar_csv(Config.DATASET_PATH)
+            artifacts = preprocess_pipeline(self.df)
+            logger.info(f"preprocess_data: artifacts {artifacts}")
+            self.artifacts = artifacts
+        except Exception as e:
+            logger.exception(f"preprocess_data failed: {e}")
         return self
 
     def engineer_features(self):
