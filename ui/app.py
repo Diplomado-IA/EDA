@@ -88,7 +88,14 @@ elif fase.startswith("Fase 2"):
                 Path("outputs/eda/resumen").mkdir(parents=True, exist_ok=True)
                 Path("outputs/eda/figures").mkdir(parents=True, exist_ok=True)
                 st.session_state.eda_result = eda_minimo(st.session_state.df, objetivo=config.TARGET_CLASSIFICATION, no_show=True)
-                st.success("EDA completado")
+                # También generar gráficos Fase 1 para compatibilidad
+                import subprocess
+                try:
+                    subprocess.run(["./venv/bin/python", "scripts/execute_pipeline.py", "--phase", "1"], check=True)
+                    st.success("EDA completado + Gráficos Fase 1 generados")
+                except Exception as e:
+                    st.success("EDA completado")
+                    st.warning(f"No se pudieron generar los gráficos Fase 1: {e}")
 
     with col_view:
         if st.button("📄 Ver Artefactos", use_container_width=True):
