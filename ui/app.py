@@ -113,6 +113,25 @@ elif fase.startswith("Fase 2"):
         st.subheader("Primeras Filas")
         st.dataframe(df.head(), use_container_width=True)
 
+    st.subheader("Artefactos Generados")
+    artefacts = [
+        "resumen_columnas.csv",
+        "resumen_columnas_ordenado.csv",
+        "top10_faltantes.csv",
+        "descriptivos_numericos.csv",
+        "decision_metricas.txt"
+    ]
+    for a in artefacts:
+        p = Path(f"outputs/eda/resumen/{a}")
+        if p.exists():
+            st.write(f"✅ {a}")
+            if a.endswith('.csv'):
+                st.dataframe(pd.read_csv(p), use_container_width=True)
+            elif a.endswith('.txt'):
+                st.code(p.read_text(encoding='utf-8'), language='text')
+        else:
+            st.write(f"⌛ {a} pendiente")
+
     # Gráficos generados en data/processed (Fase 1)
     st.subheader("Gráficos (Fase 1) en data/processed")
     proc_dir = Path("data/processed")
@@ -135,7 +154,7 @@ elif fase.startswith("Fase 2"):
     else:
         st.info("Directorio data/processed no existe")
 
-    st.subheader("Artefactos Generados")
+    st.subheader("Otros Gráficos")
     artefacts = [
         "resumen_columnas.csv",
         "resumen_columnas_ordenado.csv",
