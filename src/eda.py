@@ -393,11 +393,27 @@ def eda_minimo(
             )
             resultados["graficos"].append(fig_path)
 
-            # 5.1 Decisión de métrica según IR
+            # 5.1 Decisión de métrica según IR (con descripción)
             decision = decision_metrica(imbalance_ratio)
             decision_path = "outputs/eda/resumen/decision_metricas.txt"
+            # Descripción enriquecida con clases y timestamp
+            from datetime import datetime
+            vc = df[objetivo].value_counts(dropna=False)
+            clases_txt = "\n".join([f"  {k}: {v} ({v/len(df)*100:.2f}%)" for k,v in vc.items()])
+            descripcion = (
+                f"Generado: {datetime.utcnow().isoformat()}Z\n"
+                f"Objetivo: {objetivo}\n"
+                f"Filas: {len(df)}\n"
+                f"Clases:\n{clases_txt}\n"
+                f"Imbalance Ratio: {imbalance_ratio:.2f}\n\n"
+                f"Descripción: La variable objetivo '{objetivo}' presenta un desbalance "
+                f"{'moderado-fuerte' if imbalance_ratio>=3 else 'leve-moderado'} (IR={imbalance_ratio:.2f}). "
+                f"Se utilizará split estratificado y métricas robustas al desbalance (F1-macro, AUC-PR), "
+                f"y se evaluará el uso de class_weight y/o técnicas de re-muestreo.\n\n"
+                f"Decisión:\n{decision}\n"
+            )
             with open(decision_path, "w", encoding="utf-8") as f:
-                f.write(decision)
+                f.write(descripcion)
             print(f"[OK] Decisión de métrica guardada en: {decision_path}")
             resultados["resumen"].append(decision_path)
         else:
