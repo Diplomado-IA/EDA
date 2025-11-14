@@ -99,7 +99,7 @@ def execute_phase_1():
         corr_matrix = df[numeric_cols].corr()
         fig, ax = plt.subplots(figsize=(14, 12))
         sns.heatmap(corr_matrix, cmap='coolwarm', center=0, ax=ax, cbar_kws={'label': 'Correlación'}, 
-                    annot=False, fmt='.2f', square=True, linewidths=0.5)
+                    annot=True, fmt='.2f', square=True, linewidths=0.5)
         ax.set_title('Matriz de Correlación', fontsize=14, fontweight='bold')
         plt.xticks(rotation=45, ha='right', fontsize=8)
         plt.yticks(fontsize=8)
