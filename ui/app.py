@@ -113,6 +113,28 @@ elif fase.startswith("Fase 2"):
         st.subheader("Primeras Filas")
         st.dataframe(df.head(), use_container_width=True)
 
+    # Gráficos generados en data/processed (Fase 1)
+    st.subheader("Gráficos (Fase 1) en data/processed")
+    proc_dir = Path("data/processed")
+    if proc_dir.exists():
+        proc_imgs = [
+            proc_dir / '01_values_count.png',
+            proc_dir / '02_edad_distribucion.png',
+            proc_dir / '03_distribution_program.png',
+            proc_dir / '04_correlation_matrix.png',
+            proc_dir / '05_missing_values.png',
+            proc_dir / '06_outliers_detection.png',
+        ]
+        shown_any=False
+        for img in proc_imgs:
+            if img.exists():
+                st.image(str(img), caption=img.name, use_container_width=True)
+                shown_any=True
+        if not shown_any:
+            st.info("No hay imágenes en data/processed aún")
+    else:
+        st.info("Directorio data/processed no existe")
+
     st.subheader("Artefactos Generados")
     artefacts = [
         "resumen_columnas.csv",
@@ -132,7 +154,7 @@ elif fase.startswith("Fase 2"):
         else:
             st.write(f"⌛ {a} pendiente")
 
-    st.subheader("Gráficos")
+    st.subheader("Otros Gráficos")
     fig_dir = Path("outputs/eda/figures")
     if fig_dir.exists():
         imgs = list(fig_dir.glob("*.png"))
