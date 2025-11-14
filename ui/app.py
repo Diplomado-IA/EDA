@@ -106,14 +106,6 @@ elif fase.startswith("Fase 2"):
 
     st.markdown("---")
 
-    # Generar gráficos Fase 1 (compatibilidad UI)
-    if st.button("🖼️ Generar gráficos Fase 1"):
-        import subprocess
-        try:
-            subprocess.run(["./venv/bin/python", "scripts/execute_pipeline.py", "--phase", "1"], check=True)
-            st.success("Gráficos Fase 1 generados")
-        except Exception as e:
-            st.error(f"Error al generar Fase 1: {e}")
 
     df = st.session_state.df
     if df is not None:
