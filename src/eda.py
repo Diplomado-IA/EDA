@@ -1,4 +1,28 @@
 # src/eda.py
+from pathlib import Path
+from config.config import Config
+import pandas as pd
+
+ENCODINGS_TRY = ("utf-8", "latin-1", "cp1252")
+
+def cargar_csv(ruta: str | Path, sep: str | None = None, encodings: tuple[str,...]=ENCODINGS_TRY) -> pd.DataFrame:
+    """Carga robusta de CSV con prueba de múltiples encodings y validación de ruta.
+    - Usa separador de Config si no se especifica.
+    - low_memory=False para tipos consistentes.
+    """
+    ruta = Path(ruta)
+    if not ruta.exists():
+        raise FileNotFoundError(f"Archivo no encontrado: {ruta}")
+    sep = sep or Config.SEPARATOR
+    last_err = None
+    for enc in encodings:
+        try:
+            df = pd.read_csv(ruta, sep=sep, encoding=enc, low_memory=False)
+            return df
+        except Exception as e:
+            last_err = e
+            continue
+    raise RuntimeError(f"Fallo al leer CSV usando encodings {encodings}. Último error: {last_err}")
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -189,7 +213,7 @@ def graficar_histogramas(
         plt.tight_layout()
 
         # Guardar el archivo
-        ruta = f"outputs/figures/hist_{col}.png"
+        ruta = f"outputs/eda/figures/hist_{col}.png"
         plt.savefig(ruta, dpi=150)
         rutas_guardado.append(ruta)
 
@@ -247,7 +271,7 @@ def graficar_boxplots(
         plt.tight_layout()
 
         # Guardar el archivo
-        ruta = f"outputs/figures/box_{col}.png"
+        ruta = f"outputs/eda/figures/box_{col}.png"
         plt.savefig(ruta, dpi=150)
         rutas_guardado.append(ruta)
 
@@ -319,21 +343,21 @@ def eda_minimo(
 
     # 2. Resumen de columnas
     resumen = resumen_columnas(df)
-    resumen_path = "outputs/resumen/resumen_columnas.csv"
+    resumen_path = "outputs/eda/resumen/resumen_columnas.csv"
     resumen.to_csv(resumen_path, index=False, encoding="utf-8")
     print(f"[OK] Resumen de columnas guardado en: {resumen_path}")
     resultados["resumen"].append(resumen_path)
 
     # 2.1 Resumen ordenado
     resumen_ordenado = ordenar_resumen(resumen)
-    resumen_ordenado_path = "outputs/resumen/resumen_columnas_ordenado.csv"
+    resumen_ordenado_path = "outputs/eda/resumen/resumen_columnas_ordenado.csv"
     resumen_ordenado.to_csv(resumen_ordenado_path, index=False, encoding="utf-8")
     print(f"[OK] Resumen ordenado guardado en: {resumen_ordenado_path}")
     resultados["resumen"].append(resumen_ordenado_path)
 
     # 2.2 Top faltantes
     top10_faltantes = obtener_top_faltantes(resumen, top=10)
-    top10_faltantes_path = "outputs/resumen/top10_faltantes.csv"
+    top10_faltantes_path = "outputs/eda/resumen/top10_faltantes.csv"
     top10_faltantes.to_csv(top10_faltantes_path, index=False, encoding="utf-8")
     print(
         f"[OK] Top-10 columnas con más valores faltantes guardado en: {top10_faltantes_path}"
@@ -343,7 +367,8 @@ def eda_minimo(
     # 3. Descriptivos numéricos
     desc_num = descriptivos_numericos(df)
     if not desc_num.empty:
-        desc_num_path = "outputs/resumen/descriptivos_numericos.csv"
+        Path("outputs/eda/resumen").mkdir(parents=True, exist_ok=True)
+        desc_num_path = "outputs/eda/resumen/descriptivos_numericos.csv"
         desc_num.to_csv(desc_num_path, encoding="utf-8")
         print(f"[OK] Descriptivos numéricos guardados en: {desc_num_path}")
         resultados["resumen"].append(desc_num_path)
@@ -353,7 +378,7 @@ def eda_minimo(
     for col, serie in tops.items():
         df_top = serie.reset_index()
         df_top.columns = [col, "frecuencia"]
-        top_path = f"outputs/resumen/topcats_{col}.csv"
+        top_path = f"outputs/eda/resumen/topcats_{col}.csv"
         df_top.to_csv(top_path, index=False, encoding="utf-8")
         print(f"[OK] Top {max_cats} categorías de '{col}' guardado en: {top_path}")
         resultados["categorias"].append(top_path)
@@ -362,7 +387,7 @@ def eda_minimo(
     imbalance_ratio = None
     if objetivo:
         if objetivo in df.columns:
-            fig_path = "outputs/figures/objetivo_barras.png"
+            fig_path = "outputs/eda/figures/objetivo_barras.png"
             imbalance_ratio = plot_distrib_objetivo(
                 df, objetivo, show=(not no_show), savepath=fig_path
             )
@@ -370,7 +395,7 @@ def eda_minimo(
 
             # 5.1 Decisión de métrica según IR
             decision = decision_metrica(imbalance_ratio)
-            decision_path = "outputs/resumen/decision_metricas.txt"
+            decision_path = "outputs/eda/resumen/decision_metricas.txt"
             with open(decision_path, "w", encoding="utf-8") as f:
                 f.write(decision)
             print(f"[OK] Decisión de métrica guardada en: {decision_path}")
@@ -389,6 +414,13 @@ def eda_minimo(
         resultados["graficos"].extend(box_paths)
 
     print("\n=== EDA mínimo completado ===")
+    # Crear índice de artefactos
+    index_path = "outputs/eda/resumen/eda_index.txt"
+    with open(index_path, 'w', encoding='utf-8') as f:
+        for k,v in resultados.items():
+            for r in v:
+                f.write(f"{k}\t{r}\n")
+    resultados['resumen'].append(index_path)
     print(f"- Archivos de resumen: {len(resultados['resumen'])}")
     print(f"- Archivos de categorías: {len(resultados['categorias'])}")
     print(f"- Gráficos generados: {len(resultados['graficos'])}")
