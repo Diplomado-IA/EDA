@@ -208,6 +208,59 @@ def engineer_features(train: pd.DataFrame, test: pd.DataFrame) -> Tuple[pd.DataF
             test_fe = test_fe.reindex(columns=train_fe.columns, fill_value=0)
             report_lines.append(f"Dummies generados para {col}")
 
+    # Flag POST_2020
+    if "AÑO" in train_fe.columns:
+        try:
+            y_tr = pd.to_numeric(train_fe["AÑO"], errors="coerce")
+            y_te = pd.to_numeric(test_fe["AÑO"], errors="coerce")
+            train_fe["POST_2020"] = (y_tr >= 2020).astype("uint8")
+            test_fe["POST_2020"] = (y_te >= 2020).astype("uint8")
+            report_lines.append("Flag POST_2020 creado")
+        except Exception:
+            pass
+
+    # Ratios simples (seguros)
+    def _safe_ratio(df: pd.DataFrame, num: str, den: str, name: str) -> bool:
+        if num in df.columns and den in df.columns:
+            eps = 1e-6
+            df[name] = df[num] / (df[den].replace(0, np.nan) + eps)
+            return True
+        return False
+
+    ratio_created = False
+    if _safe_ratio(train_fe, "TOTAL TITULACIONES", "DURACIÓN ESTUDIO CARRERA", "RATIO_TITULACIONES_DURACION"):
+        _safe_ratio(test_fe, "TOTAL TITULACIONES", "DURACIÓN ESTUDIO CARRERA", "RATIO_TITULACIONES_DURACION")
+        ratio_created = True
+    if _safe_ratio(train_fe, "PROMEDIO_EDAD_PROGRAMA", "DURACIÓN ESTUDIO CARRERA", "RATIO_EDAD_DURACION"):
+        _safe_ratio(test_fe, "PROMEDIO_EDAD_PROGRAMA", "DURACIÓN ESTUDIO CARRERA", "RATIO_EDAD_DURACION")
+        ratio_created = True
+    if ratio_created:
+        report_lines.append("Ratios creados (p.ej., RATIO_TITULACIONES_DURACION)")
+
+    # Features temporales (lags/rolling) por institución (si existe) y año
+    value_col = "TOTAL TITULACIONES"
+    group_candidates = [
+        "CÓDIGO INSTITUCIÓN", "CODIGO INSTITUCION", "INSTITUCIÓN", "INSTITUCION", "PROGRAMA"
+    ]
+    group_col = next((c for c in group_candidates if c in train_fe.columns), None)
+    if group_col and value_col in train_fe.columns and "AÑO" in train_fe.columns:
+        for df_fe in (train_fe, test_fe):
+            df_fe.sort_values([group_col, "AÑO"], inplace=True)
+            df_fe[f"{value_col}_lag1"] = df_fe.groupby(group_col)[value_col].shift(1)
+            df_fe[f"{value_col}_lag2"] = df_fe.groupby(group_col)[value_col].shift(2)
+            df_fe[f"{value_col}_roll3_mean"] = df_fe.groupby(group_col)[value_col].transform(
+                lambda x: x.rolling(3, min_periods=1).mean()
+            )
+        report_lines.append(f"Lags (1,2) y rolling(3) para {value_col} por {group_col} generados")
+
+    # Agregaciones por REGIÓN y AÑO (sum/mean)
+    if {"REGIÓN", "AÑO", value_col}.issubset(train_fe.columns):
+        for df_fe in (train_fe, test_fe):
+            gb = df_fe.groupby(["REGIÓN", "AÑO"])[value_col]
+            df_fe[f"{value_col}_sum_region_year"] = gb.transform("sum")
+            df_fe[f"{value_col}_mean_region_year"] = gb.transform("mean")
+        report_lines.append("Agregaciones sum/mean por REGIÓN y AÑO generadas")
+
     # Índices agregados simples (placeholder genérico)
     # HHI: Herfindahl-Hirschman Index sobre distribución de PROGRAMA por AÑO (si existen)
     if {"PROGRAMA", "AÑO"}.issubset(train.columns):

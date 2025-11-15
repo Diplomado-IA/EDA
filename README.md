@@ -149,3 +149,22 @@ streamlit run ui/app.py
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 ```
+
+## Ejecución desde CLI
+
+- Activar entorno e instalar dependencias:
+  
+  ```bash
+  python3 -m venv venv && source venv/bin/activate
+  pip install -r requirements.txt
+  ```
+
+- Ejecutar flujo completo (EDA + preprocesamiento):
+  
+  ```bash
+  python scripts/run_all.py
+  ```
+
+- Artefactos generados:
+  - data/processed/* (datasets, correlación, VIF, features seleccionadas)
+  - outputs/eda/resumen/* (resúmenes de preprocesamiento)
