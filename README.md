@@ -139,7 +139,7 @@ streamlit run ui/app.py
   * `config/config.py`.
 
 * `clean.sh`:
-
+bash clean.sh
   * Recrea la estructura de artefactos vacía.
   * **No** modifica `data/raw`.
 

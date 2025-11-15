@@ -82,17 +82,133 @@ def main():
     env["PYTHONPATH"] = str(PROJECT_ROOT)
 
     ok = True
+
+    # 0) Fases 1-2: EDA y artefactos iniciales
+    ok = run_step(
+        name="EDA",
+        cmd=[sys.executable, "scripts/execute_pipeline.py", "--phase", "all"],
+        desc="Ejecución Fases 1-2 (EDA)",
+        env=env,
+        stop_on_error=stop_on_error,
+        skip=False,
+    ) and ok
+    if not ok and stop_on_error:
+        list_artifacts()
+        print("\n⚠️ Flujo detenido por error en EDA")
+        return 1
+
+    # 1) Preproceso completo para generar artefactos (X_train/X_test engineered)
     try:
         sys.path.insert(0, str(PROJECT_ROOT))
-        from src.pipeline import MLPipeline
+        from config.config import Config
+        from src.eda import cargar_csv
+        from src.preprocessing.clean import _ensure_modalidad_bin, _coerce_regression_target, impute_values, temporal_split, preprocess_pipeline
+        import pandas as pd
+        from pathlib import Path as _Path
+
         print("\n" + "="*80)
-        print("➡️  Ejecutando pipeline (EDA+Preproceso)")
+        print("➡️  Ejecutando preprocesamiento (Fase 3)")
         print("="*80)
-        MLPipeline().run_full_pipeline()
-        print("✔ pipeline completado")
-        ok = True
+        df = cargar_csv(Config.DATASET_PATH)
+        df = _ensure_modalidad_bin(df)
+        df = _coerce_regression_target(df)
+        df = impute_values(df)
+        # y_train/y_test a partir del mismo split temporal
+        train_df, test_df = temporal_split(df)
+        task = "classification" if Config.TARGET_CLASSIFICATION in train_df.columns else "regression"
+        y_col = Config.TARGET_CLASSIFICATION if task == "classification" else Config.TARGET_REGRESSION
+        y_train = train_df[y_col]
+        y_test = test_df[y_col]
+        # Ejecutar pipeline para generar X engineered y artefactos
+        artifacts = preprocess_pipeline(df)
+        xtr_path = _Path(artifacts.get("X_train_engineered", "data/processed/X_train_engineered.csv"))
+        xte_path = _Path(artifacts.get("X_test_engineered", "data/processed/X_test_engineered.csv"))
+        X_train = pd.read_csv(xtr_path)
+        X_test = pd.read_csv(xte_path)
+        print(f"✔ Preproceso OK | X_train={X_train.shape} X_test={X_test.shape} | y: {y_col}")
     except Exception as e:
-        print(f"✖ pipeline falló: {e}")
+        print(f"✖ preproceso falló: {e}")
+        ok = False
+        list_artifacts()
+        print("\n" + ("✅ Flujo completado" if ok else "⚠️ Flujo completado con errores"))
+        return 1
+
+    # 2) Entrenamiento y evaluación
+    model = None
+    feature_names = list(X_train.columns)
+    try:
+        if not skip_train:
+            from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+            print("\n" + "="*80)
+            print("➡️  Entrenando modelo demo")
+            print("="*80)
+            if task == "classification":
+                model = RandomForestClassifier(n_estimators=200, max_depth=18, random_state=42, n_jobs=-1)
+            else:
+                model = RandomForestRegressor(n_estimators=200, max_depth=18, random_state=42, n_jobs=-1)
+            model.fit(X_train, y_train)
+            print("✔ Entrenamiento completado")
+        else:
+            print("[SKIP] Entrenamiento")
+        if not skip_eval and model is not None:
+            from sklearn.metrics import roc_auc_score, f1_score, mean_absolute_error
+            print("\n" + "="*80)
+            print("➡️  Evaluación en test")
+            print("="*80)
+            if task == "classification":
+                try:
+                    proba = model.predict_proba(X_test)[:,1]
+                    auc = roc_auc_score(y_test, proba)
+                    print(f"AUC-ROC: {auc:.3f}")
+                    (_Path("reports").mkdir(parents=True, exist_ok=True))
+                    (_Path("reports/metrics_classification.txt")).write_text(f"AUC-ROC={auc:.4f}\n", encoding="utf-8")
+                except Exception:
+                    pred = model.predict(X_test)
+                    f1 = f1_score(y_test, pred, average='macro')
+                    print(f"F1-macro: {f1:.3f}")
+                    (_Path("reports/metrics_classification.txt")).write_text(f"F1-macro={f1:.4f}\n", encoding="utf-8")
+            else:
+                pred = model.predict(X_test)
+                mae = mean_absolute_error(y_test, pred)
+                print(f"MAE: {mae:.3f}")
+                (_Path("reports").mkdir(parents=True, exist_ok=True))
+                (_Path("reports/metrics_regression.txt")).write_text(f"MAE={mae:.4f}\n", encoding="utf-8")
+        elif skip_eval:
+            print("[SKIP] Evaluación")
+    except Exception as e:
+        print(f"✖ entrenamiento/evaluación falló: {e}")
+        ok = False
+
+    # 3) XAI: Feature Importance y Permutation Importance
+    try:
+        if not skip_xai and model is not None:
+            import numpy as _np
+            import pandas as _pd
+            from sklearn.inspection import permutation_importance
+            rep_dir = _Path("reports"); rep_dir.mkdir(parents=True, exist_ok=True)
+            # Feature importances (si aplica)
+            if hasattr(model, "feature_importances_"):
+                fi = _np.array(model.feature_importances_)
+                feats = _pd.DataFrame({"feature": feature_names, "importance": fi})
+                feats = feats.sort_values("importance", ascending=False)
+                out = rep_dir / ("feature_importance_classification.csv" if task=="classification" else "feature_importance_regression.csv")
+                feats.to_csv(out, index=False)
+                print(f"✔ Feature importance guardado en {out}")
+            # Permutation importance (submuestreo para velocidad)
+            idx = _np.random.RandomState(42).choice(len(X_test), size=min(3000, len(X_test)), replace=False)
+            perm = permutation_importance(model, X_test.iloc[idx], y_test.iloc[idx] if hasattr(y_test,'iloc') else y_test[idx], n_repeats=3, random_state=42, n_jobs=2)
+            pi = _pd.DataFrame({
+                "feature": feature_names,
+                "importance_mean": perm.importances_mean,
+                "importance_std": perm.importances_std,
+            }).sort_values("importance_mean", ascending=False)
+            out = rep_dir / ("permutation_importance_classification.csv" if task=="classification" else "permutation_importance_regression.csv")
+            pi.to_csv(out, index=False)
+            print(f"✔ Permutation importance guardado en {out}")
+        elif skip_xai:
+            print("[SKIP] XAI")
+    except Exception as e:
+        print(f"✖ XAI falló: {e}")
         ok = False
 
     list_artifacts()
