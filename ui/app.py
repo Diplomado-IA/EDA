@@ -689,4 +689,33 @@ elif fase.startswith("Fase 4"):
 
     st.info("Criterios Fase 4: artefactos generados en reports/ y visualizaciones interactivas mostradas.")
 
+elif fase == "Informes":
+    st.header("Informes")
+    docs_dir = Path("docs/informes")
+    md_files = sorted(docs_dir.glob("*.md")) if docs_dir.exists() else []
+    if not md_files:
+        st.info("No se encontraron archivos .md en docs/informes")
+    else:
+        if len(md_files) > 4:
+            st.info(f"Se detectaron {len(md_files)} informes. Usa la lista para navegar.")
+            col_nav, col_view = st.columns([1,3])
+            with col_nav:
+                choice = st.radio("Informes disponibles", [p.stem for p in md_files], index=0)
+            sel = next((p for p in md_files if p.stem == choice), md_files[0])
+            with col_view:
+                st.caption(f"Ruta: {sel.resolve()}")
+                try:
+                    st.markdown(sel.read_text(encoding='utf-8'))
+                except Exception as e:
+                    st.error(f"Error leyendo {sel.name}: {e}")
+        else:
+            tabs = st.tabs([p.stem for p in md_files])
+            for tab, md in zip(tabs, md_files):
+                with tab:
+                    st.caption(f"Ruta: {md.resolve()}")
+                    try:
+                        st.markdown(md.read_text(encoding='utf-8'))
+                    except Exception as e:
+                        st.error(f"Error leyendo {md.name}: {e}")
+
 st.markdown("---")

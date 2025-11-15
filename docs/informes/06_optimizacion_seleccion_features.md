@@ -1,7 +1,5 @@
 # Optimización de la Selección de Features (Selección & Guardado)
 
-Fecha: 2025-11-14T06:46:13.290Z
-
 Resumen
 - Causa del alto consumo: mutual information sobre todas las columnas/filas numéricas escala con p y n y puede ser lento y demandante en CPU/RAM.
 - Solución aplicada: muestreo de filas, filtrado por varianza, límite de columnas por mayor varianza, tipos ligeros y ANOVA (f-statistics) por defecto; fallback a mutual information.

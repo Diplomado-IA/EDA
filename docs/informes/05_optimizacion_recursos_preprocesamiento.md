@@ -1,7 +1,5 @@
 # Optimización de Consumo de Recursos en Correlación, VIF y Codificación
 
-Fecha: 2025-11-14T06:31:22.604Z
-
 Resumen
 - Por qué sube la CPU: la matriz de correlaciones escala como O(p²·n) y el VIF requiere p regresiones o una inversión matricial; con muchas columnas (p) o filas (n) es costoso. Además, NumPy/BLAS usa múltiples hilos, por lo que puedes ver >100% de CPU (varios núcleos).
 - Qué hicimos: aplicamos muestreo de filas, reducción previa de variables y tipos numéricos más ligeros, y un cálculo de VIF más estable. También robustecimos el One‑Hot Encoding para evitar explosiones de memoria.

@@ -102,77 +102,7 @@ El proyecto se rige por un firme compromiso con la ética y la equidad. Se anali
 
 Este proyecto no es meramente un ejercicio técnico; es la implementación de un activo estratégico fundamental para la navegación del complejo panorama de la educación superior. La propuesta detalla un plan integral para desarrollar una solución de analítica avanzada que es técnicamente robusta, metodológicamente sólida y éticamente consciente. El resultado no será una simple herramienta, sino la instauración de una capacidad organizacional para la toma de decisiones ágil y basada en evidencia, sentando las bases para optimizar recursos, innovar en el diseño curricular y, en última instancia, fortalecer la excelencia educativa.
 
-```mermaid
-flowchart LR
-  A["Datos crudos (2007–2024)"] --> B["Validación & Tipos (AÑO, promedios a numérico)"]
-  B --> C["Imputación & Limpieza (rangos de edad=0, medianas)"]
-  C --> D["Ingeniería de Features (HHI, LQ, IPG, dummies, duraciones)"]
-  D --> E["Split Temporal (Train/Valid/Test)"]
-
-  subgraph CLF["Clasificación (MODALIDAD_BIN)"]
-    E --> C1["Preprocesado (cat/num)"]
-    C1 --> C2["Modelo (CatBoost/XGB/LogReg)"]
-    C2 --> C3["Calibración (Isotónica)"]
-    C3 --> C4["Umbral por costo (FP/FN)"]
-    C4 --> C5["KPIs: AUC-PR, F1-macro, Brier"]
-    C4 --> C6["Predicción: Presencial/No Presencial"]
-  end
-
-  subgraph REG["Regresión (PROMEDIO EDAD PROGRAMA)"]
-    E --> R1["Preprocesado (cat/num)"]
-    R1 --> R2["Modelo (CatBoost/LGBM/ElasticNet)"]
-    R2 --> R3["Intervalos (Quantile/Conformal)"]
-    R3 --> R4["KPIs: MAE, MedAE, RMSE"]
-    R3 --> R5["Predicción: Edad promedio"]
-  end
-
-  C2 --> X["XAI (SHAP global/local, Permutation)"]
-  R2 --> X
-
-  C4 --> M["MLflow (runs, métricas)"]
-  R2 --> M
-  M --> AR["Artefactos (modelos, umbral, reportes)"]
-  AR --> U["Consumo (dashboards, decisiones)"]
-  AR --> MON["Monitoreo & Drift (retrain trigger)"]
-```
-
-```mermaid
-flowchart TB
-  A["Datos crudos (2007–2024)"] --> B["Validación & Tipos (AÑO, promedios a numérico)"]
-  B --> C["Imputación & Limpieza (rangos de edad=0, medianas)"]
-  C --> D["Ingeniería de Features (HHI, LQ, IPG, dummies, duraciones)"]
-  D --> E["Split Temporal (Train/Valid/Test)"]
-
-  subgraph CLF["Clasificación (MODALIDAD_BIN)"]
-    E --> C1["Preprocesado (cat/num)"]
-    C1 --> C2["Modelo (CatBoost/XGB/LogReg)"]
-    C2 --> C3["Calibración (Isotónica)"]
-    C3 --> C4["Umbral por costo (FP/FN)"]
-    C4 --> C5["KPIs: AUC-PR, F1-macro, Brier"]
-    C4 --> C6["Predicción: Presencial/No Presencial"]
-  end
-
-  subgraph REG["Regresión (PROMEDIO EDAD PROGRAMA)"]
-    E --> R1["Preprocesado (cat/num)"]
-    R1 --> R2["Modelo (CatBoost/LGBM/ElasticNet)"]
-    R2 --> R3["Intervalos (Quantile/Conformal)"]
-    R3 --> R4["KPIs: MAE, MedAE, RMSE"]
-    R3 --> R5["Predicción: Edad promedio"]
-  end
-
-  C2 --> X["XAI (SHAP global/local, Permutation)"]
-  R2 --> X
-
-  C4 --> M["MLflow (runs, métricas)"]
-  R2 --> M
-  M --> AR["Artefactos (modelos, umbral, reportes)"]
-  AR --> U["Consumo (dashboards, decisiones)"]
-  AR --> MON["Monitoreo & Drift (retrain trigger)"]
-```
-
 ## 6. Anexos
-
----
 
 ### 6.1 CSV Titulados
 data/raw/TITULADO_2007-2024_web_19_05_2025_E.csv

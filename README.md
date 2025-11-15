@@ -1,170 +1,245 @@
-````markdown
-# Proyecto ML reestructurado según arquitectura modular
 
-## 1) Descarga del proyecto
+# 🚀 Proyecto ML – Arquitectura Modular con UI en Streamlit
 
-- Requiere **Git** y **Python 3.10+**.
-- Clonar el repo y entrar al directorio del proyecto:
+Este repositorio contiene un flujo completo de **EDA → Preprocesamiento → Artefactos ML**, expuesto a través de una **UI interactiva en Streamlit** y estructurado según una **arquitectura modular**.
+
+
+## 📦 1) Descarga del proyecto
+
+### Requisitos previos
+
+- **Git**
+- **Python 3.10+**
+
+### Clonar el repositorio
 
 ```bash
 git clone <URL_DEL_REPO>
 cd EDA
-````
+```
 
----
+> 💡 Asegúrate de estar en la carpeta raíz del proyecto antes de continuar.
 
-## 2) Configuración básica
 
-* Crear y activar entorno virtual:
+## 🛠️ 2) Configuración básica
+
+### Crear y activar entorno virtual
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
+# En Windows:
+# venv\Scripts\activate
 ```
 
-* Instalar dependencias:
+### Instalar dependencias
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
 
-## 3) Dataset y configuración
+## 📂 3) Dataset y configuración
 
-* Verifica que el CSV esté en:
+### Ubicación del dataset
 
-  ```text
-  data/raw/TITULADO_2007-2024_web_19_05_2025_E.csv
-  ```
+Verifica que el archivo CSV esté en:
 
-* Configuración actual:
+```text
+data/raw/TITULADO_2007-2024_web_19_05_2025_E.csv
+```
 
-  * `config/config.py` usa separador `';'` y *encoding* `'latin1'`.
-  * Ajusta estos parámetros si cambias el archivo de entrada.
+### Configuración actual
 
-* Objetivos del modelo:
+El archivo de configuración principal es:
 
-  * `MODALIDAD_BIN`
+```text
+config/config.py
+```
 
-    * Clase 1 = **Presencial**
-    * Clase 0 = **No presencial / otras modalidades**
-  * `PROMEDIO_EDAD_PROGRAMA`
+Allí se definen, entre otros:
 
----
+* Separador del CSV: `';'`
+* *Encoding*: `'latin1'`
 
-## 4) Ejecutar la UI
+> ⚙️ Si cambias el archivo de entrada o su formato, **ajusta estos parámetros** en `config/config.py`.
 
-* Lanzar la aplicación **Streamlit**:
+### Objetivos del modelo
+
+* **Clasificación (`MODALIDAD_BIN`)**
+
+  * Clase `1` → **Presencial**
+  * Clase `0` → **No presencial / otras modalidades**
+
+* **Regresión (`PROMEDIO_EDAD_PROGRAMA`)**
+
+  * Variable continua de edad promedio por programa.
+
+
+
+## 🎛️ 4) Ejecutar la UI (Streamlit)
+
+### Lanzar la aplicación
 
 ```bash
 streamlit run ui/app.py
 ```
 
-* En la UI encontrarás:
+### Secciones disponibles en la UI
 
-  * **Fase 1:**
-    Validar objetivos y configuración.
+* **Fase 1 – Configuración inicial**
 
-  * **Fase 2 – EDA (Análisis Exploratorio de Datos):**
+  * Validar objetivos (`MODALIDAD_BIN`, `PROMEDIO_EDAD_PROGRAMA`).
+  * Verificar ruta y parámetros de lectura del dataset.
 
-    * Carga el dataset.
-    * Ejecuta el EDA.
-    * Visualiza artefactos (`.csv` / `.png`) indicando su ruta.
+* **Fase 2 – EDA (Análisis Exploratorio de Datos)**
 
-  * **Fase 3 – Preprocesamiento:**
+  * Carga del dataset.
+  * Ejecución del EDA automatizado.
+  * Visualización de artefactos generados (`.csv`, `.png`) con su ruta correspondiente.
 
-    * Limpieza.
-    * *Split* temporal.
-    * Escalado (**StandardScaler**).
-    * Codificación segura:
+* **Fase 3 – Preprocesamiento**
 
-      * One-Hot Encoding (OHE) con *rare grouping* / *frequency encoding*.
-    * *Features*:
+  * Limpieza de datos.
+  * *Split* temporal.
+  * Escalado con **StandardScaler**.
+  * Codificación segura de variables categóricas:
 
-      * HHI
-      * LQ
-      * IPG
-    * Cálculo de **correlación** y **VIF** optimizados.
-    * Selección de variables y guardado de resultados.
+    * **One-Hot Encoding (OHE)** con *rare grouping* / *frequency encoding*.
+  * Generación y cálculo de *features*:
 
-  * **Informes:**
-    Pestañas con todos los `.md` de `docs/` renderizados.
+    * **HHI**
+    * **LQ**
+    * **IPG**
+  * Cálculo optimizado de:
 
-  * Botón lateral:
+    * **Matriz de correlación**
+    * **VIF (Variance Inflation Factor)**
+  * Selección de variables y guardado de resultados.
 
-    * **"Limpiar artefactos (clean.sh)"** para reiniciar la salida del proyecto sin tocar los datos crudos.
+* **Fase 4 – Interpretabilidad (XAI)**
 
----
+  * Entrena un modelo demo (RandomForest/Logistic/Linear) sobre train.
+  * Explicabilidad: Feature Importance (árbol), Permutation Importance y Coeficientes lineales.
+  * Guarda artefactos en `reports/*.csv` y muestra tablas/gráficos en la UI.
 
-## 5) Artefactos generados
+* **Informes**
 
-* **EDA / Resúmenes:**
+  * Pestañas que renderizan todos los `.md` dentro de `docs/`.
 
-  * `outputs/eda/resumen/*`
-    (CSV, `decision_metricas.txt`)
+* **Botón lateral**
 
-* **Correlación / VIF:**
+  * **"Limpiar artefactos (clean.sh)"**
+    Permite reiniciar la salida del proyecto sin modificar los datos crudos en `data/raw`.
 
-  * `data/processed/correlation_matrix.csv`
-  * `data/processed/vif_scores.csv`
-  * Archivo auxiliar: `*columns_used.txt`
 
-* **Selección de features:**
+## 📁 5) Artefactos generados
 
-  * `data/processed/selected_features.txt`
+### EDA / Resúmenes
 
-* **Datasets finales:**
+* `outputs/eda/resumen/*`
+  Incluye:
 
-  * `data/processed/X_train_engineered.csv`
-  * `data/processed/X_test_engineered.csv`
+  * CSVs de resumen
+  * `decision_metricas.txt`
 
-* **Gráficos:**
+### Gráficos
 
-  * `outputs/eda/figures/*`
-  * Copias en: `data/processed/*.png`
+* `outputs/eda/figures/*`
+* Copias auxiliares en:
 
----
+  * `data/processed/*.png`
 
-## Notas
+### Correlación / VIF
 
-* **ML** = *Machine Learning* (Aprendizaje Automático).
+* `data/processed/correlation_matrix.csv`
+* `data/processed/vif_scores.csv`
+* Archivos auxiliares:
 
-* **OHE** = *One-Hot Encoding*.
+  * `*columns_used.txt` (columnas empleadas para los cálculos)
 
-* **VIF** = *Variance Inflation Factor*.
+### Selección de *features*
 
-* Si cambias los objetivos (`MODALIDAD_BIN` / `PROMEDIO_EDAD_PROGRAMA`), actualiza:
+* `data/processed/selected_features.txt`
 
-  * `config/config.py`.
+### Datasets finales
 
-* `clean.sh`:
+* `data/processed/X_train_engineered.csv`
+* `data/processed/X_test_engineered.csv`
+
+### Interpretabilidad (XAI)
+
+* `reports/feature_importance_*.csv`
+* `reports/permutation_importance_*.csv`
+* `reports/coefficients_linear_*.csv`
+
+
+
+
+## 🧪 6) Ejecución desde CLI (flujo completo)
+
+Si prefieres correr el flujo sin UI:
+
+### 6.1 Activar entorno e instalar dependencias
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 6.2 Ejecutar flujo completo (EDA + preprocesamiento)
+
+```bash
+python scripts/run_all.py
+```
+
+### 6.3 Artefactos generados vía CLI
+
+* `data/processed/*`
+
+  * Datasets procesados
+  * Correlación
+  * VIF
+  * *Features* seleccionadas
+
+* `outputs/eda/resumen/*`
+
+  * Resúmenes de EDA y preprocesamiento
+
+
+## 🧾 7) Notas y convenciones
+
+* **ML** → *Machine Learning* (Aprendizaje Automático)
+* **OHE** → *One-Hot Encoding*
+* **VIF** → *Variance Inflation Factor*
+
+Si cambias los objetivos (`MODALIDAD_BIN` / `PROMEDIO_EDAD_PROGRAMA`), recuerda actualizar:
+
+* `config/config.py`
+
+### Script de limpieza: `clean.sh`
+
+```bash
 bash clean.sh
-  * Recrea la estructura de artefactos vacía.
-  * **No** modifica `data/raw`.
+```
 
-* Para limitar uso de CPU en cálculos intensivos:
+* Recrea la estructura de artefactos **vacía**.
+* **No modifica** el contenido de `data/raw`.
+
+### Limitar uso de CPU en cálculos intensivos (opcional)
 
 ```bash
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 ```
 
-## Ejecución desde CLI
 
-- Activar entorno e instalar dependencias:
-  
-  ```bash
-  python3 -m venv venv && source venv/bin/activate
-  pip install -r requirements.txt
-  ```
+## ✅ Resumen rápido
 
-- Ejecutar flujo completo (EDA + preprocesamiento):
-  
-  ```bash
-  python scripts/run_all.py
-  ```
+* Clona el repo y crea un entorno virtual.
+* Ajusta `config/config.py` si cambias el dataset.
+* Ejecuta la UI con `streamlit run ui/app.py` **o** usa `python scripts/run_all.py` desde CLI.
+* Usa `clean.sh` para resetear artefactos sin tocar los datos crudos.
 
-- Artefactos generados:
-  - data/processed/* (datasets, correlación, VIF, features seleccionadas)
-  - outputs/eda/resumen/* (resúmenes de preprocesamiento)
+
+

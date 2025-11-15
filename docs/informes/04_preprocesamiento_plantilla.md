@@ -1,7 +1,5 @@
 # Documentación del Proceso de Preprocesamiento de Datos (Proyecto Educación Superior)
 
-Última actualización: 2025-11-14
-
 1. Objetivo
 
 El objetivo del preprocesamiento es preparar los datos para modelado predictivo de forma robusta y eficiente, minimizando pérdida de información y evitando problemas como multicolinealidad, alta cardinalidad y uso excesivo de memoria. El pipeline evita data leakage y busca reproducibilidad total.
