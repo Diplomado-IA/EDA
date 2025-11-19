@@ -22,6 +22,30 @@ from src.models.train import run_grid_search
 from src.features.leakage import detect_leakage, save_leakage_report
 
 
+def read_csv_robust(path: str, encoding: str | None = None, sep: str | None = None) -> pd.DataFrame:
+    """Lee CSV probando varias codificaciones y separadores si no se especifican.
+    - Si no se indica encoding, intenta utf-8, latin-1, cp1252.
+    - Si sep es None, usa engine='python' con autodetección (permite ';' o ',').
+    """
+    encodings = [encoding] if encoding else ["utf-8", "latin-1", "cp1252"]
+    last_err = None
+    for enc in encodings:
+        try:
+            return pd.read_csv(path, sep=sep if sep is not None else None, engine="python", encoding=enc)
+        except UnicodeDecodeError as e:
+            last_err = e
+            continue
+        except Exception as e:
+            last_err = e
+            # Sigue probando con la siguiente codificación si no se especificó una fija
+            if encoding is None:
+                continue
+            raise
+    if last_err:
+        raise last_err
+    raise RuntimeError("No se pudo leer el CSV con las codificaciones probadas")
+
+
 def load_config(path: str = "config/params.yaml") -> dict:
     cfg = {}
     try:
@@ -56,7 +80,7 @@ def load_config(path: str = "config/params.yaml") -> dict:
 
 def prepare_data(args, cfg):
     if args.data:
-        df = pd.read_csv(args.data)
+        df = read_csv_robust(args.data, encoding=args.encoding, sep=args.sep)
         assert args.target, "Debe especificar --target cuando se usa --data"
         target = args.target
         # Orden temporal si aplica
@@ -127,6 +151,8 @@ def main():
     parser.add_argument("--data", type=str, default=None, help="Ruta a CSV opcional")
     parser.add_argument("--target", type=str, default=None, help="Columna target si se pasa --data")
     parser.add_argument("--date-col", type=str, default=None, help="Columna temporal para ordenar si CV temporal")
+    parser.add_argument("--encoding", type=str, default=None, help="Forzar codificación del CSV (e.g., latin-1, cp1252)")
+    parser.add_argument("--sep", type=str, default=None, help="Separador CSV si no es ',' (e.g., ';')")
     parser.add_argument("--out-dir", type=str, default="outputs/hpo", help="Directorio de salida para resultados HPO")
     parser.add_argument("--no-leak-check", action="store_true", help="Desactiva chequeo de fuga")
     args = parser.parse_args()
