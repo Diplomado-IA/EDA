@@ -81,6 +81,7 @@ def load_config(path: str = "config/params.yaml") -> dict:
 def prepare_data(args, cfg):
     if args.data:
         df = read_csv_robust(args.data, encoding=args.encoding, sep=args.sep)
+        df.columns = [str(c).strip() for c in df.columns]  # normaliza encabezados
         assert args.target, "Debe especificar --target cuando se usa --data"
         target = args.target
         # Orden temporal si aplica
