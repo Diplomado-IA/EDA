@@ -126,6 +126,27 @@ def main():
         X_train = pd.read_csv(xtr_path)
         X_test = pd.read_csv(xte_path)
         print(f"✔ Preproceso OK | X_train={X_train.shape} X_test={X_test.shape} | y: {y_col}")
+        # Mostrar artefactos de fuga si existen
+        import json as _json
+        from pathlib import Path as _P
+        leak_rep = _P("reports/leakage_report.json")
+        leak_act = _P("reports/leakage_action.txt")
+        if leak_rep.exists():
+            try:
+                rep = _json.loads(leak_rep.read_text(encoding="utf-8"))
+                print(f"[LEAKAGE] flag={rep.get('flag')} R2={rep.get('r2')} tested={rep.get('tested_features')}")
+            except Exception:
+                print("[LEAKAGE] No se pudo leer leakage_report.json")
+        if leak_act.exists():
+            print("[LEAKAGE] acción aplicada:")
+            print(leak_act.read_text(encoding="utf-8"))
+        else:
+            print("[LEAKAGE] sin acción (flag=false o estrategia no disparada)")
+        # Guardar resumen rápido
+        try:
+            (_P("reports/leakage_summary.txt")).write_text(f"flag={rep.get('flag')} R2={rep.get('r2')} strategy={rep.get('strategy')}\n", encoding="utf-8")
+        except Exception:
+            pass
     except Exception as e:
         print(f"✖ preproceso falló: {e}")
         ok = False

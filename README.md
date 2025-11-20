@@ -234,12 +234,19 @@ export MKL_NUM_THREADS=1
 ```
 
 
-## ✅ Resumen rápido
+## Implementación de oportunidad de mejora
 
-* Clona el repo y crea un entorno virtual.
-* Ajusta `config/config.py` si cambias el dataset.
-* Ejecuta la UI con `streamlit run ui/app.py` **o** usa `python scripts/run_all.py` desde CLI.
-* Usa `clean.sh` para resetear artefactos sin tocar los datos crudos.
+Oportunidad: Riesgo de fuga/tautología al predecir `PROMEDIO EDAD PROGRAMA ` usando sus componentes directos (`PROMEDIO EDAD HOMBRE `, `PROMEDIO EDAD MUJER `), lo que podría inflar métricas sin aportar señal nueva.
+Implementación: Se añadió detección automática (regresión lineal simple) en `preprocess_pipeline` con limpieza robusta (strip, normalización decimal) y reporte `reports/leakage_report.json`. Estrategias soportadas en `config/params.yaml`: `drop_features`, `redefine_target`, `fail`. Umbral `r2_threshold=0.90` mantiene criterios estrictos; en los datos actuales R²≈0.19 < 0.90 ⇒ no se aplica mitigación.
+Cómo ejecutar/prueba:
+1. Flujo completo: `python scripts/run_all.py` (muestra resumen [LEAKAGE] en consola y genera `reports/leakage_report.json`).
+2. Chequeo directo regresión: `python scripts/run_regression_leakage.py --strategy redefine_target` (fuerza lectura y pipeline; si R²≥0.90 redefine y crea `outputs/metadata/target_mapping.json`).
+3. Para probar mitigaciones: cambia `strategy` a `drop_features` o `redefine_target` y (opcional) ajusta temporalmente `r2_threshold` a un valor menor (ej. 0.05) para ver acción aplicada (`reports/leakage_action.txt`).
+Timestamp actualización: 2025-11-20T01:56:36.110Z
+ 
+---
+
+
 
 
 

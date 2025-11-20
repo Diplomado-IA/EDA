@@ -16,7 +16,7 @@ class Config:
 
     # Targets (project proposal)
     TARGET_CLASSIFICATION = "MODALIDAD_BIN"  # Presencial vs No presencial (binarizada)
-    TARGET_REGRESSION = "PROMEDIO EDAD PROGRAMA "  # columna original incluye espacio final
+    TARGET_REGRESSION = "PROMEDIO EDAD PROGRAMA "  # incluye espacio final exacto del CSV
 
     # Metrics (extended per proposal)
     METRICS = {

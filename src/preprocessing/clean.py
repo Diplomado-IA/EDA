@@ -440,13 +440,62 @@ def save_datasets(X_train: pd.DataFrame, X_test: pd.DataFrame) -> None:
 
 
 def preprocess_pipeline(df: pd.DataFrame) -> Dict[str, str]:
-    """Ejecuta la fase 3 completa y devuelve rutas de artefactos y reportes."""
+    """Ejecuta la fase 3 completa + control de fuga (HU1) y devuelve rutas de artefactos y reportes."""
     artifacts: Dict[str, str] = {}
-    # Limpieza
+    # Cargar config YAML (params) para HU1
+    try:
+        import yaml  # type: ignore
+        with open("config/params.yaml", "r", encoding="utf-8") as f:
+            params = yaml.safe_load(f) or {}
+    except Exception:
+        params = {}
+    leakage_cfg = params.get("leakage", {})
+    # Limpieza básica
     df = _ensure_modalidad_bin(df)
     df = _coerce_regression_target(df)
     df = impute_values(df)
-    # Split
+    # Normalizar nombres de columnas (strip) para detección robusta de fuga
+    # NO strip: queremos coincidencia exacta con espacios finales
+    # df.columns = [c.strip() for c in df.columns]
+    # Detección de fuga antes de split (usa columnas originales)
+    leakage_flag = False
+    leakage_report = {}
+    try:
+        from src.features.leakage import detect_leakage, save_leakage_report, drop_leaky_features
+        print("[DEBUG] Columnas disponibles:", repr(df.columns.tolist()))
+        print("[DEBUG] suspect_features:", leakage_cfg.get("suspect_features", []))
+        target_reg = Config.TARGET_REGRESSION
+        suspect_features = leakage_cfg.get("suspect_features", [])
+        if leakage_cfg.get("detect", True) and target_reg in df.columns:
+            rep = detect_leakage(df, target_reg, suspect_features, leakage_cfg.get("r2_threshold", 0.90))
+            leakage_flag = rep.get("flag", False)
+            rep["strategy"] = leakage_cfg.get("strategy")
+            leakage_report = rep
+            save_leakage_report(rep)
+    except Exception as e:
+        leakage_report = {"error": f"leakage_detection_failed: {e}"}
+    # Mitigación según estrategia
+    if leakage_flag:
+        strategy = leakage_cfg.get("strategy")
+        if strategy == "drop_features":
+            # Eliminar features sospechosas (componentes directos del target)
+            df = drop_leaky_features(df, leakage_report.get("tested_features", []))
+        elif strategy == "redefine_target":
+            base_col = leakage_cfg.get("target_base")
+            if base_col and base_col in df.columns:
+                from src.data.targets import redefine_target
+                df = redefine_target(df, Config.TARGET_REGRESSION.strip(), base_col)
+            else:
+                raise RuntimeError("Fuga detectada y estrategia redefine_target sin base_col válido")
+        elif strategy == "fail" or strategy is None:
+            raise RuntimeError("Fuga detectada (R2>=umbral) y estrategia=fail/None ⇒ deteniendo pipeline")
+        # Persistir resumen de acción
+        try:
+            (Path("reports")/"leakage_action.txt").write_text(
+                f"flag={leakage_flag}\nstrategy={strategy}\nreport={leakage_report}\n", encoding="utf-8")
+        except Exception:
+            pass
+    # Split temporal
     train_df, test_df = temporal_split(df)
     # Escalado (excluir objetivos)
     exclude = [Config.TARGET_CLASSIFICATION, Config.TARGET_REGRESSION]
@@ -462,20 +511,38 @@ def preprocess_pipeline(df: pd.DataFrame) -> Dict[str, str]:
     artifacts["feature_engineering_report"] = PROC_DIR.joinpath("feature_engineering_report.txt").as_posix()
     Path(artifacts["feature_engineering_report"]).write_text(fe_report, encoding="utf-8")
     # Correlación y VIF
-    corr = correlation_matrix(train_fe)
-    vif = compute_vif(train_fe)
+    correlation_matrix(train_fe)
+    compute_vif(train_fe)
     artifacts["correlation_matrix"] = PROC_DIR.joinpath("correlation_matrix.csv").as_posix()
     artifacts["vif_scores"] = PROC_DIR.joinpath("vif_scores.csv").as_posix()
-    # Selección de features (clasificación por defecto si existe Y binaria)
+    # Selección de features
     task = "classification" if Config.TARGET_CLASSIFICATION in train_fe.columns else "regression"
-    y_col = Config.TARGET_CLASSIFICATION if task == "classification" else Config.TARGET_REGRESSION
+    # Si se redefinió el target (mapping existe), usar el residual para entrenamiento y selección
+    residual_mapping_path = Path("outputs/metadata/target_mapping.json")
+    residual_target = None
+    if residual_mapping_path.exists():
+        try:
+            import json as _json
+            _m = _json.loads(residual_mapping_path.read_text(encoding="utf-8"))
+            residual_target = _m.get("redefined_target")
+        except Exception:
+            residual_target = None
+    if task == "regression" and residual_target and residual_target in train_fe.columns:
+        y_col = residual_target
+    else:
+        y_col = Config.TARGET_CLASSIFICATION if task == "classification" else Config.TARGET_REGRESSION.strip()
     y_train = train_fe[y_col] if y_col in train_fe.columns else pd.Series(np.zeros(len(train_fe)))
-    X_train = train_fe.drop(columns=[c for c in [Config.TARGET_CLASSIFICATION, Config.TARGET_REGRESSION] if c in train_fe.columns])
-    X_test = test_fe.drop(columns=[c for c in [Config.TARGET_CLASSIFICATION, Config.TARGET_REGRESSION] if c in test_fe.columns])
+    X_train = train_fe.drop(columns=[c for c in [Config.TARGET_CLASSIFICATION, Config.TARGET_REGRESSION.strip(), residual_target] if c and c in train_fe.columns])
+    X_test = test_fe.drop(columns=[c for c in [Config.TARGET_CLASSIFICATION, Config.TARGET_REGRESSION.strip(), residual_target] if c and c in test_fe.columns])
+    # Salvaguarda: asegurar que target no esté en X
+    assert y_col not in X_train.columns, "Target presente en features tras mitigación de fuga"
     selected = select_features(X_train, y_train, task=task)
     artifacts["selected_features"] = PROC_DIR.joinpath("selected_features.txt").as_posix()
     # Guardar datasets finales
     save_datasets(X_train[X_train.columns.intersection(selected)], X_test[X_test.columns.intersection(selected)])
     artifacts["X_train_engineered"] = PROC_DIR.joinpath("X_train_engineered.csv").as_posix()
     artifacts["X_test_engineered"] = PROC_DIR.joinpath("X_test_engineered.csv").as_posix()
+    # Añadir reporte de fuga a artifacts
+    if leakage_report:
+        artifacts["leakage_report"] = Path("reports/leakage_report.json").as_posix()
     return artifacts

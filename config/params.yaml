@@ -1,27 +1,38 @@
-# Configuración inicial para mejoras: fuga, HPO y validación temporal
-leakage:
-  detect: true
-  r2_threshold: 0.90
-  strategy: drop_features  # opciones: drop_features | redefine_target | fail
-  suspect_features: [PROMEDIO_EDAD_HOMBRE, PROMEDIO_EDAD_MUJER]
-  target_base: PROMEDIO_EDAD_BASE
-
-hpo:
-  method: grid          # opciones: grid | bayes
-  metric: neg_root_mean_squared_error
-  random_state: 42
-  grid:
-    n_estimators: [200, 400, 800]
-    max_depth: [null, 6, 10, 14]
-    min_samples_split: [2, 5, 10]
-    min_samples_leaf: [1, 2, 4]
-
 cv:
-  kind: time            # opciones: kfold | time
+  kind: time
   n_splits: 5
   shuffle: false
-
+hpo:
+  grid:
+    max_depth:
+    - null
+    - 6
+    - 10
+    - 14
+    min_samples_leaf:
+    - 1
+    - 2
+    - 4
+    min_samples_split:
+    - 2
+    - 5
+    - 10
+    n_estimators:
+    - 200
+    - 400
+    - 800
+  method: grid
+  metric: neg_root_mean_squared_error
+  random_state: 42
+leakage:
+  detect: true
+  r2_threshold: 0.9
+  strategy: redefine_target
+  suspect_features:
+  - 'PROMEDIO EDAD HOMBRE '
+  - 'PROMEDIO EDAD MUJER '
+  target_base: PROMEDIO EDAD NB
 split:
-  date_col: anio        # o 'fecha'
-  train_end: 2018
+  date_col: anio
   test_start: 2019
+  train_end: 2018
