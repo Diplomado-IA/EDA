@@ -77,6 +77,11 @@ def main():
     skip_train = "--skip-train" in sys.argv
     skip_eval = "--skip-eval" in sys.argv
     skip_xai = "--skip-xai" in sys.argv
+    with_hpo = "--with-hpo" in sys.argv
+    hpo_method = "grid"
+    for arg in sys.argv:
+        if arg.startswith("--hpo-method="):
+            hpo_method = arg.split("=",1)[1].strip().lower()
 
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_ROOT)
@@ -163,12 +168,35 @@ def main():
             print("\n" + "="*80)
             print("➡️  Entrenando modelo demo")
             print("="*80)
+            best_params = None
+            if with_hpo:
+                hpo_out = f"outputs/hpo_{'clf' if task=='classification' else 'reg'}"
+                os.makedirs(hpo_out, exist_ok=True)
+                task_flag = ['--task', 'clf' if task=='classification' else 'reg']
+                method_flag = ['--method', hpo_method]
+                print(f"\n➡  Ejecutando HPO ({hpo_method}) antes del entrenamiento principal...")
+                subprocess.run([sys.executable, 'scripts/run_hpo.py', *task_flag, *method_flag, '--fast', '--out-dir', hpo_out, '--no-leak-check'], cwd=PROJECT_ROOT, check=False)
+                import json as _json
+                best_file = Path(hpo_out)/'best.json'
+                if best_file.exists():
+                    try:
+                        best_data = _json.loads(best_file.read_text(encoding='utf-8'))
+                        best_params = best_data.get('best_params_', {})
+                        print(f"[HPO] best_params={best_params}")
+                    except Exception as e:
+                        print(f"[HPO] No se pudo leer best.json: {e}")
             if task == "classification":
-                model = RandomForestClassifier(n_estimators=200, max_depth=18, random_state=42, n_jobs=-1)
+                if best_params:
+                    model = RandomForestClassifier(random_state=42, n_jobs=-1, **{k:v for k,v in best_params.items() if k in {"n_estimators","max_depth","min_samples_split","min_samples_leaf"}})
+                else:
+                    model = RandomForestClassifier(n_estimators=200, max_depth=18, random_state=42, n_jobs=-1)
             else:
-                model = RandomForestRegressor(n_estimators=200, max_depth=18, random_state=42, n_jobs=-1)
+                if best_params:
+                    model = RandomForestRegressor(random_state=42, n_jobs=-1, **{k:v for k,v in best_params.items() if k in {"n_estimators","max_depth","min_samples_split","min_samples_leaf"}})
+                else:
+                    model = RandomForestRegressor(n_estimators=200, max_depth=18, random_state=42, n_jobs=-1)
             model.fit(X_train, y_train)
-            print("✔ Entrenamiento completado")
+            print("✔ Entrenamiento completado (con HPO" + (" aplicado" if best_params else " por defecto") + ")")
         else:
             print("[SKIP] Entrenamiento")
         if not skip_eval and model is not None:

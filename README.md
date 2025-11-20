@@ -234,9 +234,10 @@ export MKL_NUM_THREADS=1
 ```
 
 
-## Implementación de oportunidad de mejora
+## 8) Implementación de oportunidad de mejora
 
-Oportunidad: Riesgo de fuga/tautología al predecir `PROMEDIO EDAD PROGRAMA ` usando sus componentes directos (`PROMEDIO EDAD HOMBRE `, `PROMEDIO EDAD MUJER `), lo que podría inflar métricas sin aportar señal nueva.
+### 8.1 Riesgo de fuga/tautología
+**Oportunidad**: Riesgo de fuga/tautología al predecir `PROMEDIO EDAD PROGRAMA ` usando sus componentes directos (`PROMEDIO EDAD HOMBRE `, `PROMEDIO EDAD MUJER `), lo que podría inflar métricas sin aportar señal nueva.
 Implementación: Se añadió detección automática (regresión lineal simple) en `preprocess_pipeline` con limpieza robusta (strip, normalización decimal) y reporte `reports/leakage_report.json`. Estrategias soportadas en `config/params.yaml`: `drop_features`, `redefine_target`, `fail`. Umbral `r2_threshold=0.90` mantiene criterios estrictos; en los datos actuales R²≈0.19 < 0.90 ⇒ no se aplica mitigación.
 Cómo ejecutar/prueba:
 1. Flujo completo: `python scripts/run_all.py` (muestra resumen [LEAKAGE] en consola y genera `reports/leakage_report.json`).
@@ -246,7 +247,49 @@ Timestamp actualización: 2025-11-20T01:56:36.110Z
  
 ---
 
+### 8.2 Tuning explícito (HPO)
+**Oportunidad**: originalmente el entrenamiento usaba hiperparámetros fijos en RandomForest, sin experimento sistemático ni documentación de la selección óptima. Se requería explorar `n_estimators`, `max_depth`, `min_samples_split`, `min_samples_leaf` con métodos Grid y Bayes y dejar trazabilidad.
+Implementación: se creó `scripts/run_hpo.py` con soporte para:
+- GridSearchCV (`--method grid`) usando el espacio configurado en `config/params.yaml`.
+- BayesSearchCV (`--method bayes`) para optimización más eficiente.
+- Tareas de regresión y clasificación (`--task reg|clf`).
+- Modo rápido (`--fast`) que reduce el grid / iteraciones para exploración inicial.
+- Submuestreo opcional `--max-samples` y control de núcleos `--n-jobs`.
+Artefactos generados:
+- `outputs/hpo_<task>/results.csv` con todas las combinaciones y métricas (`neg_mean_absolute_error`, `neg_root_mean_squared_error`, `r2` o `roc_auc`, `f1_macro`, `accuracy`).
+- `outputs/hpo_<task>/best.json` con la mejor configuración según métrica de refit.
+- `reports/hpo_summary.md` acumulando ejecuciones y mostrando Top 5 por métrica y bloque JSON de la mejor configuración.
+Integración en flujo principal: bandera `--with-hpo` en `scripts/run_all.py` dispara HPO previo al entrenamiento y aplica automáticamente `best_params` al modelo (clasificación o regresión). Elegir método con `--hpo-method=grid|bayes`.
+Comprobación rápida:
+```bash
+# Grid regresión
+python scripts/run_hpo.py --task reg --method grid --fast --out-dir outputs/hpo_reg_fast
+# Bayes clasificación
+python scripts/run_hpo.py --task clf --method bayes --fast --bayes-iter 10 --out-dir outputs/hpo_clf_fast --no-leak-check
+# Flujo completo con HPO (grid)
+python scripts/run_all.py --with-hpo --hpo-method=grid
+# Flujo completo con HPO (bayes)
+python scripts/run_all.py --with-hpo --hpo-method=bayes
+```
+Validación: inspeccionar `reports/hpo_summary.md` para tablas y `outputs/hpo_<task>/best.json` para parámetros óptimos aplicados. Reproducibilidad: ajustar semilla en `config/params.yaml` (`hpo.random_state`).
 
+### 8.3 Validación temporal (TimeSeriesSplit / split fijo)
+**Oportunidad**: asegurar robustez temporal (evitar fuga hacia el futuro) cuando existe dimensión año.
+Implementación: el split fijo está parametrizado en `config/config.py` (train ≤2018, gap 2019, test 2020–2024) y se aplica en `src/preprocessing/clean.py::temporal_split`. Además, el CV temporal está soportado vía `src/data/splits.py::get_cv` activándolo con `cv.kind: time` en `config/params.yaml`; en HPO se respeta el orden temporal si se pasa `--date-col`.
+Comprobación:
+- Flujo principal: `python scripts/run_all.py` genera `data/processed/X_train_engineered.csv` y `X_test_engineered.csv` ya separados temporalmente (train ≤2018, test ≥2020).
+- HPO con CV temporal: define en `config/params.yaml` `cv.kind: time` y ejecuta, por ejemplo:
+```bash
+python scripts/run_hpo.py --task reg --method grid --fast --date-col 'AÑO' --out-dir outputs/hpo_reg_time
+```
+Reconfiguración: ajusta años en `config/config.py` (TRAIN_END_YEAR, TEST_START_YEAR, etc.) y n_splits en `config/params.yaml`.
 
+### 8.4 Próximos pasos
+- UI: exponer en ui/app.py un panel “Experimentos (HPO)” con controles para método (grid/bayes), tarea (reg/clf), fast, n_jobs, bayes-iter, y botón Ejecutar que llame a scripts/run_hpo.py y renderice reports/hpo_summary.md y tablas results.csv.
+- UI: añadir switch “Validación temporal (TimeSeriesSplit)” que lea cv.kind de config/params.yaml y, en datasets externos, campo para --date-col; mostrar el rango train/test efectivo desde config/config.py.
+- Guardado de modelo: tras run_all.py con --with-hpo, persistir modelo final con best_params en models/ (pickle) y mostrar link en UI.
+- Trazabilidad: registrar en outputs/metadata/run.json versiones de librerías y método de HPO usado; mostrarlo en UI como metadata de experimento.
+- Reproducibilidad: permitir fijar semilla global desde UI y exponer valor actual (config.hpo.random_state).
+- Documentación: agregar nota de buenas prácticas (evitar data leakage, usar split temporal) en la sección de ayuda de la UI.
 
-
+## Evaluación M5U2

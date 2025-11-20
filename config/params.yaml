@@ -24,6 +24,7 @@ hpo:
   method: grid
   metric: neg_root_mean_squared_error
   random_state: 42
+  task: regression
 leakage:
   detect: true
   r2_threshold: 0.9
