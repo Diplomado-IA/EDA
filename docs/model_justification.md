@@ -32,7 +32,7 @@ Algoritmos con fracción cercana a contaminación objetivo:
 ## Métricas Claves
 - Se dispone de hpo_summary.md para explorar hiperparámetros óptimos (ver docs).
 - Silhouette promedio clustering (todas configs)=0.088.
-- Clasificación: AUC-ROC=0.4674
+- Clasificación: AUC-ROC=0.4644
 - No hay métricas de regresión (ejecutar pipeline con objetivo de regresión).
 - Importancias clasificación disponibles (feature_importance_classification.csv).
 - No hay importancias de regresión (ejecutar XAI con tarea de regresión).
