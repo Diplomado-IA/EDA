@@ -1,6 +1,6 @@
 ## Contexto
 Problema: Comprender y modelar modalidad de programas y edad promedio, explorando también estructuras no supervisadas (clustering) y anomalías para calidad de datos.
-Fecha de generación: 2025-11-21T03:01:33.205973Z
+Fecha de generación: 2025-11-21T03:08:32.998373Z
 Leakage: Leakage flag=False r2=0.18854441022979995 features=['PROMEDIO EDAD HOMBRE ', 'PROMEDIO EDAD MUJER ']
 
 ## Dataset
@@ -23,19 +23,19 @@ Figura/Importancias: ver reports/feature_importance_regression.csv.
 ### Clustering
 Top clustering (silhouette):
 algo|params|silhouette|homogeneity|completeness|runtime_ms
-DBSCAN|{'eps': 0.7, 'min_samples': 5}|0.2192823255920242|||743.37
-KMeans|{'n_clusters': 7}|0.1822504906134569|||185.74
-DBSCAN|{'eps': 0.7, 'min_samples': 10}|0.1820721923050643|||796.53
+DBSCAN|{'eps': 0.7, 'min_samples': 5}|0.2192823255920242|||737.24
+KMeans|{'n_clusters': 7}|0.1822504906134569|||237.89
+DBSCAN|{'eps': 0.7, 'min_samples': 10}|0.1820721923050643|||753.8
 
 Figura: clustering_dbscan_eps_grid.png
 
 ### Anomalías
 Anomalías (fracción vs target):
 algo|anomaly_fraction|contamination_cfg|runtime_ms
-IsolationForest|0.05|0.05|1091.82
-LocalOutlierFactor|0.05|0.05|874.62
-LocalOutlierFactor|0.05|0.05|887.97
-EllipticEnvelope|0.05|0.05|2058.34
+IsolationForest|0.05|0.05|1033.32
+LocalOutlierFactor|0.05|0.05|851.72
+LocalOutlierFactor|0.05|0.05|869.44
+EllipticEnvelope|0.05|0.05|1813.7
 
 Figura: anomaly_fraction_by_algo.png
 

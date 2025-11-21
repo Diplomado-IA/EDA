@@ -292,9 +292,9 @@ Reconfiguración: ajusta años en `config/config.py` (TRAIN_END_YEAR, TEST_START
 - Reproducibilidad: permitir fijar semilla global desde UI y exponer valor actual (config.hpo.random_state).
 - Documentación: agregar nota de buenas prácticas (evitar data leakage, usar split temporal) en la sección de ayuda de la UI.
 
-## Implementación EvM5U3
+## 9) Implementación EvM5U3
 
-### Agrupamiento (Clustering)
+### 9.1 Agrupamiento (Clustering)
 Esta implementación (HU-CLUST-01) agrega un flujo de análisis no supervisado para explorar patrones en los datos procesados (X_train_engineered). Se aplican KMeans y DBSCAN sobre un subconjunto escalado (y opcionalmente reducido con PCA) para identificar grupos potenciales de programas/modalidades.
 
 Ejecutar flujo principal (solo EDA + preprocesamiento + entrenamiento rápido, omitiendo evaluación y XAI para acelerar):
@@ -324,7 +324,7 @@ Interpretación:
 - Homogeneity/completeness se reportan si existe y_train (proxy); de lo contrario se enfocan en métricas intrínsecas.
 
 
-### Detección de Anomalías (Anomaly Detection)
+### 9.2 Detección de Anomalías (Anomaly Detection)
 Esta implementación (HU-ANOM-01) incorpora algoritmos no supervisados para identificar registros potencialmente atípicos en el dataset procesado. Permite señalar casos extremos para auditoría, limpieza adicional o generación de reglas.
 
 Ejecutar flujo previo mínimo (genera X_train_engineered):
@@ -358,4 +358,14 @@ Interpretación:
 ejecuta comando bash:
 ```bash
 bash scripts/run_full_flow.sh
+```
+
+Ejecutar paso a paso
+```bash
+- bash clean.sh
+- python3 scripts/run_all.py --with-hpo --hpo-method=grid
+- python3 scripts/run_hpo.py --task clf --method grid --fast --out-dir outputs/hpo_clf_fast
+- python3 scripts/run_hpo.py --task reg --method grid --fast --out-dir outputs/hpo_reg_fast_opt
+- python3 scripts/run_clustering.py --save-plots --pca --max-features 40 --seed 42 --sil-sample 3000 --sample-size 40000
+- python3 scripts/run_anomaly_detection.py --save-plots --pca --max-features 40 --seed 42 --sample-size 40000 --contamination 0.05
 ```
