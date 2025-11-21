@@ -354,5 +354,8 @@ Interpretación:
 
 
 
-### Justificación de Modelo
-Ver documento en docs/model_justification.md
+### Borrar todos los artefactos y ejecutar el flujo completo
+ejecuta comando bash:
+```bash
+bash scripts/run_full_flow.sh
+```
