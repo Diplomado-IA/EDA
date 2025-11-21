@@ -292,4 +292,64 @@ Reconfiguración: ajusta años en `config/config.py` (TRAIN_END_YEAR, TEST_START
 - Reproducibilidad: permitir fijar semilla global desde UI y exponer valor actual (config.hpo.random_state).
 - Documentación: agregar nota de buenas prácticas (evitar data leakage, usar split temporal) en la sección de ayuda de la UI.
 
-## Evaluación M5U2
+## Implementación EvM5U3
+
+### Agrupamiento (Clustering)
+Esta implementación (HU-CLUST-01) agrega un flujo de análisis no supervisado para explorar patrones en los datos procesados (X_train_engineered). Se aplican KMeans y DBSCAN sobre un subconjunto escalado (y opcionalmente reducido con PCA) para identificar grupos potenciales de programas/modalidades.
+
+Ejecutar flujo principal (solo EDA + preprocesamiento + entrenamiento rápido, omitiendo evaluación y XAI para acelerar):
+```bash
+python3 scripts/run_all.py --skip-eval --skip-xai
+```
+
+Ejecutar clustering (genera metrics, resumen y gráficos):
+```bash
+python3 scripts/run_clustering.py --save-plots --pca --max-features 40 --seed 42 --sil-sample 3000 --sample-size 40000
+```
+Parámetros clave:
+- --save-plots: guarda gráficos de Silhouette (KMeans) y heatmap eps/min_samples (DBSCAN) en reports/.
+- --pca: aplica PCA si hay >50 features (reduce a <=10 componentes para velocidad).
+- --max-features 40: limita columnas iniciales para reducir dimensionalidad y ruido.
+- --seed 42: fija reproducibilidad en submuestreos y algoritmos.
+- --sil-sample 3000: submuestreo para calcular Silhouette más rápido (si el dataset es grande).
+- --sample-size 40000: toma hasta 40k filas para acelerar clustering (si hay más, selecciona aleatoriamente).
+
+Resultados (reports/):
+- clustering_results.csv: tabla con algoritmo, parámetros, silhouette, homogeneity, completeness (estas últimas NaN si no hay proxy de etiqueta) y tiempo.
+- clustering_summary.md: top 3 configuraciones por Silhouette y total de configuraciones evaluadas.
+- clustering_kmeans_silhouette.png y clustering_dbscan_eps_grid.png: visualización comparativa de calidad de agrupamiento.
+Interpretación:
+- Silhouette mide separación interna de clusters (≈0.2 indica estructura débil/moderada; valores negativos señalan mala asignación).
+- DBSCAN eps=0.7 mostró mejor cohesión (Silhouette≈0.22) frente a KMeans clásico, sugiriendo densidades locales aprovechables.
+- Homogeneity/completeness se reportan si existe y_train (proxy); de lo contrario se enfocan en métricas intrínsecas.
+
+
+### Detección de Anomalías (Anomaly Detection)
+Esta implementación (HU-ANOM-01) incorpora algoritmos no supervisados para identificar registros potencialmente atípicos en el dataset procesado. Permite señalar casos extremos para auditoría, limpieza adicional o generación de reglas.
+
+Ejecutar flujo previo mínimo (genera X_train_engineered):
+```bash
+python3 scripts/run_all.py --skip-eval --skip-xai
+```
+Ejecutar detección de anomalías:
+```bash
+python3 scripts/run_anomaly_detection.py --save-plots --pca --max-features 40 --seed 42 --sample-size 40000 --contamination 0.05
+```
+Parámetros clave:
+- --save-plots: guarda barplot de fracción de anomalías y distribuciones de scores por algoritmo.
+- --pca: aplica PCA si >50 columnas para reducir dimensionalidad (<=10 componentes) y acelerar.
+- --max-features 40: limita variables iniciales (primeras columnas) para reducir ruido.
+- --seed 42: reproducibilidad en submuestreos e inicializaciones.
+- --sample-size 40000: submuestrea filas si el dataset es mayor (acelera cómputo en LOF/IsolationForest).
+- --contamination 0.05: proporción esperada de anomalías; usada por IsolationForest, LOF, EllipticEnvelope y OneClassSVM.
+
+Resultados (reports/):
+- anomaly_results.csv: resumen por algoritmo (anomaly_fraction observada vs contamination_cfg, estadísticas de score, tiempo).
+- anomaly_summary.md: top 3 algoritmos cuya fracción de anomalías más se aproxima a la contaminación objetivo.
+- anomaly_fraction_by_algo.png: comparación visual de las fracciones detectadas.
+- anomaly_scores_<ALGO>.csv / anomaly_scores_dist_<ALGO>.png: scores individuales y su distribución para análisis posterior.
+Interpretación:
+- anomaly_fraction cercana a contamination_cfg indica calibración adecuada; valores muy altos/bajos sugieren revisar parámetros.
+- Scores más extremos (colas) señalan candidatos a inspección manual; comparar entre algoritmos reduce falsos positivos.
+
+
