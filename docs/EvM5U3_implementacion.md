@@ -1,5 +1,4 @@
 # Guía de Implementación EvM5U3
-Timestamp: 2025-11-20T23:32:35.293Z
 
 ## Introducción
 Este documento detalla las historias de usuario técnicas para completar los faltantes de la Actividad Sumativa N°3 (Unidad 3) relacionados con agrupamiento, detección de anomalías, justificación del modelo y presentación final. Cada historia incluye criterios de aceptación (formato Gherkin adaptado a ML) y tareas de programación para ejecución incremental.

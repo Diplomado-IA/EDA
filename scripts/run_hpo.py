@@ -95,11 +95,12 @@ def build_estimator(cfg, task: str, n_jobs: int = -1, max_samples: int | None = 
 def build_param_grid(cfg, fast: bool):
     grid = cfg.get("hpo", {}).get("grid", {})
     if fast:
+        # Grid ultrarreducido para velocidad
         return {
-            "n_estimators": [100, 200],
-            "max_depth": [None, 10],
-            "min_samples_split": [2, 5],
-            "min_samples_leaf": [1, 2],
+            "n_estimators": [100],
+            "max_depth": [10],
+            "min_samples_split": [2],
+            "min_samples_leaf": [1],
         }
     return {
         "n_estimators": grid.get("n_estimators", [200, 400, 800]),
@@ -171,7 +172,7 @@ def main():
     parser.add_argument("--task", type=str, choices=["reg", "clf"], default=None)
     parser.add_argument("--method", type=str, choices=["grid", "bayes"], default=None)
     parser.add_argument("--bayes-iter", type=int, default=25)
-    parser.add_argument("--fast", action="store_true", help="Reduce grid y n_iter para ejecución rápida")
+    parser.add_argument("--fast", action="store_true", help="Reduce grid y n_iter para ejecución rápida (1 sola combinación en grid)")
     parser.add_argument("--n-jobs", type=int, default=-1, help="Núcleos para entrenamiento de RandomForest")
     parser.add_argument("--max-samples", type=int, default=None, help="Submuestreo bootstrap (RandomForest)")
     args = parser.parse_args()
@@ -207,6 +208,18 @@ def main():
 
     if method == "grid":
         gs = run_grid_search(estimator, param_grid, X, y, cv, scoring=scoring, out_dir=args.out_dir)
+        # Guardar best.json mínimo si no existe (grid rápido produce 1 config)
+        best_path = os.path.join(args.out_dir, "best.json")
+        if not os.path.exists(best_path):
+            try:
+                import json as _json
+                import pandas as _pd
+                res_df = _pd.read_csv(os.path.join(args.out_dir, "results.csv"))
+                best_params = {k.replace('param_',''): res_df.iloc[0][k] for k in res_df.columns if k.startswith('param_')}
+                best = {"best_params_": best_params, "method": "grid", "refit_metric": refit_metric}
+                open(best_path,'w',encoding='utf-8').write(_json.dumps(best,ensure_ascii=False,indent=2))
+            except Exception:
+                pass
     else:
         try:
             from skopt import BayesSearchCV

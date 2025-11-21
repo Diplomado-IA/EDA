@@ -353,3 +353,6 @@ Interpretación:
 - Scores más extremos (colas) señalan candidatos a inspección manual; comparar entre algoritmos reduce falsos positivos.
 
 
+
+### Justificación de Modelo
+Ver documento en docs/model_justification.md

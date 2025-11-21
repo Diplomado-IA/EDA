@@ -82,6 +82,12 @@ def main():
     for arg in sys.argv:
         if arg.startswith("--hpo-method="):
             hpo_method = arg.split("=",1)[1].strip().lower()
+        if arg.startswith("--force-task="):
+            force_val = arg.split("=",1)[1].strip().lower()
+            if force_val in {"reg","regression"}:
+                os.environ["FORCE_TASK"] = "regression"
+            elif force_val in {"clf","classification"}:
+                os.environ["FORCE_TASK"] = "classification"
 
     env = os.environ.copy()
     env["PYTHONPATH"] = str(PROJECT_ROOT)
@@ -120,7 +126,8 @@ def main():
         df = impute_values(df)
         # y_train/y_test a partir del mismo split temporal
         train_df, test_df = temporal_split(df)
-        task = "classification" if Config.TARGET_CLASSIFICATION in train_df.columns else "regression"
+        task_env = os.environ.get("FORCE_TASK")
+        task = task_env if task_env in {"classification","regression"} else ("classification" if Config.TARGET_CLASSIFICATION in train_df.columns else "regression")
         y_col = Config.TARGET_CLASSIFICATION if task == "classification" else Config.TARGET_REGRESSION
         y_train = train_df[y_col]
         y_test = test_df[y_col]
