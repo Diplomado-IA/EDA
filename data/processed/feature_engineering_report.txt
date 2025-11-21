@@ -1,3 +1,0 @@
-Flag POST_2020 creado
-Ratios creados (p.ej., RATIO_TITULACIONES_DURACION)
-Lags (1,2) y rolling(3) para TOTAL TITULACIONES por CÓDIGO INSTITUCIÓN generados
